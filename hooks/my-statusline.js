@@ -7,17 +7,27 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Git branch with robbyrussell-style formatting: git:(branch) ✗
+// Git branch with robbyrussell-style formatting: git:(branch) *+
 function getGitInfo(dir) {
   try {
     const { execFileSync } = require('child_process');
     const opts = { cwd: dir, timeout: 150, stdio: ['pipe', 'pipe', 'pipe'] };
     const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], opts).toString().trim();
     const status = execFileSync('git', ['status', '--porcelain'], opts).toString();
-    const dirty = status.trim().length > 0;
-    // robbyrussell style: bold-blue "git:(" + red branch + blue ")" + optional yellow ✗
-    const dirtyMark = dirty ? ` \x1b[33m\u2717\x1b[0m` : '';
-    return `\x1b[1;34mgit:(\x1b[31m${branch}\x1b[1;34m)\x1b[0m${dirtyMark}`;
+    let hasStaged = false;
+    let hasUnstaged = false;
+    for (const line of status.split('\n')) {
+      if (!line) continue;
+      const idx = line[0];  // index column
+      const wt = line[1];   // worktree column
+      if (idx === '?' || wt === '?') { hasUnstaged = true; continue; }
+      if (idx !== ' ' && idx !== '?') hasStaged = true;
+      if (wt !== ' ' && wt !== '?') hasUnstaged = true;
+    }
+    // * = staged (uncommitted), + = unstaged/untracked
+    const marks = (hasUnstaged ? '\x1b[33m+\x1b[0m' : '') + (hasStaged ? '\x1b[33m*\x1b[0m' : '');
+    const marksDisplay = marks ? ` ${marks}` : '';
+    return `\x1b[1;34mgit:(\x1b[31m${branch}\x1b[1;34m)\x1b[0m${marksDisplay}`;
   } catch (e) {
     return '';
   }
