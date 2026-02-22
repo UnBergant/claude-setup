@@ -10,7 +10,7 @@ This repository stores selected Claude Code configuration files from `~/.claude/
 
 - `CLAUDE.md` — global instructions loaded into every Claude Code session
 - `settings.json` — global settings (hooks, status line, permissions)
-- `commands/` — custom slash commands (`.md` prompt templates)
+- `skills/` — custom skills (`<name>/SKILL.md` prompt templates)
 - `hooks/` — lifecycle hooks and status line scripts (Node.js)
 - `plugins/` — plugin registry and marketplace config
 
