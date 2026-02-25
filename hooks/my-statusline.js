@@ -98,7 +98,7 @@ process.stdin.on('end', () => {
     if (session && dir) {
       try {
         const { execFileSync } = require('child_process');
-        const projectKey = dir.replace(/[/\\:]/g, '-');
+        const projectKey = dir.replace(/[\x5c/:]/g, '-');
         const jsonlFile = path.join(homeDir, '.claude', 'projects', projectKey, `${session}.jsonl`);
         if (fs.existsSync(jsonlFile)) {
           // Fast grep for custom-title (user-set name via /rename)
