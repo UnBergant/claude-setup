@@ -11,3 +11,4 @@
 - Add a body only when the *why* isn't obvious from the subject
 - Do not repeat the diff in the message — that's what `git show` is for
 - Do not add `Co-Authored-By` lines
+- Always write commit messages in English
