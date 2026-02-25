@@ -6,16 +6,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/sync-agents-md.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
