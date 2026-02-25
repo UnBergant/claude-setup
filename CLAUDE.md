@@ -9,7 +9,8 @@ claude-setup/
 ├── CLAUDE.md              # This file — project instructions for this repo
 ├── README.md
 ├── dotclaude/
-│   └── CLAUDE.md          # Global instructions to merge into ~/.claude/CLAUDE.md
+│   ├── CLAUDE.md          # Global instructions to merge into ~/.claude/CLAUDE.md
+│   └── settings.json      # Global permissions & settings for ~/.claude/settings.json
 ├── hooks/
 │   └── my-statusline.js   # Custom statusline hook
 └── skills/
