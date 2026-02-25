@@ -24,6 +24,10 @@ Custom statusline script in robbyrussell (oh-my-zsh) style. Displays:
 - Active task from todo list
 - Context window usage as a progress bar with color thresholds (green → yellow → orange → skull)
 
+### `hooks/sync-agents-md.sh`
+
+PostToolUse hook that triggers when `CLAUDE.md` is modified. Prompts Claude to read and update `AGENTS.md` to stay in sync, preserving AGENTS.md-specific differences (header, Codex references).
+
 ### `skills/`
 
 Custom skills (`<name>/SKILL.md`) for Claude Code:
@@ -39,8 +43,9 @@ Custom skills (`<name>/SKILL.md`) for Claude Code:
 ```bash
 # example
 ln -sf ~/Projects/AI/claude-setup/hooks/my-statusline.js ~/.claude/hooks/my-statusline.js
+ln -sf ~/Projects/AI/claude-setup/hooks/sync-agents-md.sh ~/.claude/hooks/sync-agents-md.sh
 ln -sfn ~/Projects/AI/claude-setup/skills/toxic-opinion ~/.claude/skills/toxic-opinion
 ln -sfn ~/Projects/AI/claude-setup/skills/toxic-review ~/.claude/skills/toxic-review
 ```
 
-Ensure hook scripts are executable: `chmod +x hooks/*.js`.
+Ensure hook scripts are executable: `chmod +x hooks/*`.

@@ -12,7 +12,8 @@ claude-setup/
 │   ├── CLAUDE.md          # Global instructions to merge into ~/.claude/CLAUDE.md
 │   └── settings.json      # Global permissions & settings for ~/.claude/settings.json
 ├── hooks/
-│   └── my-statusline.js   # Custom statusline hook
+│   ├── my-statusline.js   # Custom statusline hook
+│   └── sync-agents-md.sh  # PostToolUse hook: sync AGENTS.md when CLAUDE.md changes
 └── skills/
     ├── toxic-opinion/
     │   └── SKILL.md
