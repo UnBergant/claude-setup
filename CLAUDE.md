@@ -28,6 +28,16 @@ claude-setup/
 - `hooks/` and `skills/` should be **copied** (not symlinked) to `~/.claude/`. After updating files here, re-copy them to `~/.claude/`.
 - Ensure JSON files remain valid and hook scripts stay executable (`chmod +x`).
 
+## Post-pull sync check
+
+After pulling from remote, diff repo files against the global config to detect drift:
+
+- `dotclaude/settings.json` vs `~/.claude/settings.json`
+- `hooks/*` vs `~/.claude/hooks/*`
+- `skills/` vs `~/.claude/skills/`
+
+If any files differ, copy the updated repo versions to `~/.claude/`. For `dotclaude/CLAUDE.md`, merge changes into `~/.claude/CLAUDE.md` instead of overwriting.
+
 ## Documentation sync
 
 When adding, removing, or renaming files in this repo, update **all three** places that describe the structure:
