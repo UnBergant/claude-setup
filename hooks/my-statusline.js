@@ -130,7 +130,7 @@ process.stdin.on('end', () => {
     const arrow = `\x1b[1;32m\u279C\x1b[0m`;
     const cyanDir = `\x1b[36m${dirname}\x1b[0m`;
     const gitDisplay = gitInfo ? `  ${gitInfo}` : '';
-    const nameDisplay = sessionName ? ` │ \x1b[35m${sessionName}\x1b[0m` : '';
+    const nameDisplay = sessionName ? ` │ \x1b[1;95m${sessionName}\x1b[0m` : '';
     const modelDisplay = `\x1b[2m${model}\x1b[0m`;
     const prompt = `${arrow}  ${cyanDir}${gitDisplay}`;
     if (task) {
