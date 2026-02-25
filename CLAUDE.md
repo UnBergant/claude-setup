@@ -24,7 +24,7 @@ claude-setup/
 ## Workflow
 
 - `dotclaude/CLAUDE.md` contains global instructions that should be **merged** (not symlinked) into `~/.claude/CLAUDE.md`. This avoids leaking sensitive local config into the public repo.
-- `dotclaude/settings.json` should be **copied** (not symlinked) to `~/.claude/settings.json`.
+- `dotclaude/settings.json` should be **copied** (not symlinked) to `~/.claude/settings.json`. It contains permissions **and** hook registrations (e.g. `sync-agents-md.sh` as a PostToolUse hook on Edit/Write).
 - `hooks/` and `skills/` should be **copied** (not symlinked) to `~/.claude/`. After updating files here, re-copy them to `~/.claude/`.
 - Ensure JSON files remain valid and hook scripts stay executable (`chmod +x`).
 
