@@ -8,6 +8,7 @@ Version-controlled [Claude Code](https://claude.ai/code) configuration — custo
 |------|-------------|
 | `CLAUDE.md` | Project-level instructions for this repo |
 | `dotclaude/CLAUDE.md` | **Global** instructions to merge into `~/.claude/CLAUDE.md` |
+| `dotclaude/settings.json` | **Global** permissions & settings for `~/.claude/settings.json` |
 | `hooks/` | Lifecycle hooks and status line scripts (Node.js) |
 | `skills/` | Custom skills (`<name>/SKILL.md` prompt templates) |
 
