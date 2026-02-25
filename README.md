@@ -4,9 +4,14 @@ Version-controlled [Claude Code](https://claude.ai/code) configuration — custo
 
 ## What's inside
 
-### `CLAUDE.md`
+| Path | Description |
+|------|-------------|
+| `CLAUDE.md` | Project-level instructions for this repo |
+| `dotclaude/CLAUDE.md` | **Global** instructions to merge into `~/.claude/CLAUDE.md` |
+| `hooks/` | Lifecycle hooks and status line scripts (Node.js) |
+| `skills/` | Custom skills (`<name>/SKILL.md` prompt templates) |
 
-Project instructions loaded into every Claude Code session. Describes the repo purpose and workflow for syncing files back to `~/.claude/`.
+Only explicitly chosen parts of `~/.claude/` are tracked here — it is not a full mirror.
 
 ### `hooks/my-statusline.js`
 
@@ -27,7 +32,8 @@ Custom skills (`<name>/SKILL.md`) for Claude Code:
 
 ## Usage
 
-Files from this repo should be symlinked or copied to `~/.claude/`:
+- `dotclaude/CLAUDE.md` — **merge** contents into `~/.claude/CLAUDE.md` (not symlinked, to keep sensitive local config private)
+- `hooks/` and `skills/` — symlink or copy to `~/.claude/`:
 
 ```bash
 # example
