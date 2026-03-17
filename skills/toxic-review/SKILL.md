@@ -1,93 +1,87 @@
 ---
 name: toxic-review
-description: Двойное код-ревью — Codex CLI + Claude параллельно анализируют изменения и объединяют находки
-argument-hint: "[ветка|sha|пусто для незакоммиченных]"
-allowed-tools: Bash, Read
+description: Dual code review — Codex CLI + Claude analyze changes in parallel and merge findings
+argument-hint: "[branch|sha|empty for uncommitted]"
+allowed-tools: Agent
 ---
 
-# Навык: Двойное код-ревью через Codex CLI
+# Skill: Dual Code Review via Codex CLI
 
-Пользователь хочет получить ревью кода от двух AI — Codex и Claude — с объединением находок.
+The user wants a code review from two AIs — Codex and Claude — with merged findings.
 
-**Аргумент пользователя:** $ARGUMENTS
+**User argument:** $ARGUMENTS
 
 ---
 
-## Твоя роль
+## IMPORTANT: Runs via sub-agent
 
-Ты проводишь code review параллельно с Codex. Два ревьюера лучше одного — вы можете найти разные проблемы. Твоя задача:
-- Определить scope ревью (uncommitted / vs branch / конкретный коммит)
-- Запустить `codex exec review` с правильными флагами
-- Провести собственное ревью того же diff
-- Объединить находки, выделив что нашли оба (высокая уверенность) и что нашёл только один
+This skill ALWAYS runs via `Agent(general-purpose)` to keep verbose Codex CLI output out of the main context.
 
-## Определение scope
+Launch one `Agent(general-purpose)` with the prompt below. The agent does all the work and returns only the final result.
 
-Интерпретация `$ARGUMENTS`:
+### Agent prompt:
 
-| Аргумент | Что ревьюим | Флаги Codex | Git diff |
-|----------|-------------|-------------|----------|
-| *(пусто)* | Незакоммиченные изменения | `--uncommitted` | `git diff && git diff --cached` |
-| Имя ветки | Изменения vs ветка | `--base {branch}` | `git diff {branch}...HEAD` |
-| SHA коммита | Конкретный коммит | `--commit {sha}` | `git show {sha}` |
+```
+Perform a dual code review: Codex CLI + your own.
 
-Проверь валидность: `git rev-parse --verify {ref}`. Если невалидно или diff пустой — сообщи пользователю.
+**Scope:** $ARGUMENTS
+Argument interpretation:
+- Empty → uncommitted changes (`--uncommitted`, `git diff && git diff --cached`)
+- Branch name → changes vs branch (`--base {branch}`, `git diff {branch}...HEAD`)
+- Commit SHA → specific commit (`--commit {sha}`, `git show {sha}`)
 
-## Запуск Codex review
+**Step 1:** Validate the ref: `git rev-parse --verify {ref}`. If invalid or diff is empty — report it.
 
+**Step 1.5: Auto-update Codex CLI.**
+Compare versions: `codex --version` vs `npm view @openai/codex version`.
+If outdated — run `npm install -g @openai/codex@latest` before proceeding.
+
+**Step 2:** Run Codex review (timeout 180 sec):
 ```bash
-codex exec review {flags} \
-  --ephemeral \
-  -o /tmp/codex-review-{ts}.txt \
-  2>&1
+codex exec review {flags} --ephemeral -o /tmp/codex-review-{ts}.txt 2>&1
 ```
+IMPORTANT: Do NOT use the `-C` flag. Codex runs from the project working directory.
+Read the result from `/tmp/codex-review-{ts}.txt`.
 
-Таймаут: 180 секунд. При таймауте — проведи своё ревью самостоятельно.
+**Step 3:** Get the diff and perform your own review. Focus on:
+- Correctness — logic errors, edge cases, bugs
+- Security — injections, secrets, unsafe operations
+- Performance — N+1, memory leaks
+- Types — TypeScript type safety, any-casts
+- Architecture — compliance with CLAUDE.md / TECH.md
 
-## Своё ревью
+**Step 4:** Return the result STRICTLY in this format:
 
-Получи diff через git и проанализируй. Фокус:
-- **Корректность** — логические ошибки, edge cases, баги
-- **Безопасность** — инъекции, секреты в коде, unsafe операции
-- **Производительность** — N+1, лишние вычисления, утечки памяти
-- **Типы** — TypeScript type safety, any-касты
-- **Архитектура** — соответствие дизайну проекта (CLAUDE.md / TECH.md)
-
-Для больших diff (>500 строк) сосредоточься на новых файлах, конфигах и критичных изменениях.
-
-## Формат вывода
-
-```
 ## Dual Code Review
 
-**Область:** {что ревьюили}
-**Файлов затронуто:** {N}
+**Scope:** {what was reviewed}
+**Files affected:** {N}
 
-### Ревью Codex
-{ответ Codex, отформатированный}
+### Codex Review
+{Codex response, formatted. If timeout — "Codex did not respond (timeout)"}
 
-### Моё ревью
+### My Review
 
-#### Критичное
-{баги, безопасность — обязательно исправить}
+#### Critical
+{bugs, security — must fix}
 
-#### Важное
-{дизайн, производительность, типы — стоит исправить}
+#### Important
+{design, performance, types — should fix}
 
-#### Мелочи
-{стиль, именование — опционально}
+#### Minor
+{style, naming — optional}
 
-### Объединённые находки
-- **Оба нашли:** {проблемы от обоих — высокая уверенность}
-- **Только Codex:** {оценить валидность}
-- **Только я:** {оценить валидность}
-- **Рекомендация:** APPROVE / REQUEST CHANGES / обсудить
+### Merged Findings
+- **Both found:** {high confidence}
+- **Codex only:** {evaluate validity}
+- **Mine only:** {evaluate validity}
+- **Recommendation:** APPROVE / REQUEST CHANGES / discuss
 ```
 
-## Обработка ошибок
+## Error Handling
 
-- **Codex не установлен** → `npm install -g @openai/codex`
-- **Нет аутентификации** → `codex login`
-- **Нет изменений** → сообщить и остановиться
-- **Невалидная ветка/SHA** → сообщить и остановиться
-- **Таймаут / пустой ответ** → показать только своё ревью, отметить что Codex не ответил
+If the agent returns an error:
+- **Codex not installed** → suggest: `npm install -g @openai/codex`
+- **No authentication** → suggest: `codex login`
+- **No changes** → inform the user
+- **Invalid branch/SHA** → inform the user

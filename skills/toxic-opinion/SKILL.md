@@ -1,90 +1,99 @@
 ---
 name: toxic-opinion
-description: Получить второе мнение от OpenAI Codex CLI — Claude анализирует задачу, составляет адаптивный промт и синтезирует экспертизу двух AI
-argument-hint: вопрос или задача для второго мнения
-allowed-tools: Read, Bash, Glob, Grep
+description: Get a second opinion from OpenAI Codex CLI — Claude analyzes the task, composes an adaptive prompt, and synthesizes expertise from two AIs
+argument-hint: question or task for second opinion
+allowed-tools: Read, Bash, Glob, Grep, Agent, Write
 ---
 
-# Навык: Второе мнение через Codex CLI
+# Skill: Second Opinion via Codex CLI
 
-Пользователь хочет получить второе мнение от OpenAI Codex. Твоя задача — не механически прогнать промт, а **осмысленно** составить запрос для Codex, адаптированный под конкретную ситуацию, и затем профессионально синтезировать два мнения.
+The user wants a second opinion from OpenAI Codex. Your job is not to mechanically run a prompt, but to **thoughtfully** compose a Codex query adapted to the specific situation, then professionally synthesize both opinions.
 
-**Запрос пользователя:** $ARGUMENTS
+**User request:** $ARGUMENTS
 
 ---
 
-## Твоя роль
+## Your Role
 
-Ты — старший инженер, который привлекает коллегу (Codex) для peer review. Ты:
-- Понимаешь контекст проекта и задачи глубже, чем Codex (у тебя CLAUDE.md, история диалога)
-- Самостоятельно решаешь, какой контекст передать Codex и как сформулировать вопрос
-- Критически оцениваешь ответ Codex — соглашаешься где он прав, аргументированно споришь где нет
-- Даёшь итоговую рекомендацию, а не просто перечисляешь два мнения
+You are a senior engineer bringing in a colleague (Codex) for peer review. You:
+- Understand the project and task context deeper than Codex (you have CLAUDE.md, conversation history)
+- Independently decide what context to pass to Codex and how to frame the question
+- Critically evaluate Codex's response — agree where it's right, argue with evidence where it's not
+- Provide a final recommendation, not just list two opinions
 
-## Как использовать Codex CLI
+## How to Use Codex CLI
 
-**Проверка доступности:** `which codex` — если не найден, попроси пользователя установить (`npm install -g @openai/codex`).
+**CRITICAL RULE: Codex CLI must ONLY be called via Agent (sub-agent).** NEVER run `codex exec` in the main context — its output (JSONL logs, stderr) bloats the context window. Always delegate to Agent(general-purpose):
+1. Gather context and compose the prompt in the main context
+2. Write the prompt to a temp file (Write → `/tmp/codex-prompt-{ts}.txt`)
+3. Launch an Agent with instructions: run `codex exec`, read the response from the `-o` file, return only the substantive Codex answer
 
-**Формат вызова:**
+**Availability & auto-update (inside the agent, before running Codex):**
+1. `which codex` — if not found, install: `npm install -g @openai/codex`
+2. Compare versions: `codex --version` vs `npm view @openai/codex version`
+3. If outdated — auto-update: `npm install -g @openai/codex@latest`
+4. Proceed with the Codex call
+
+**Invocation format (inside the agent):**
 ```bash
 codex exec --ephemeral --sandbox workspace-write \
-  -C "{корень_проекта}" \
+  -C "{project_root}" \
   -o /tmp/codex-response-{ts}.txt \
   "$(cat /tmp/codex-prompt-{ts}.txt)" 2>&1
 ```
 
-Ключевые флаги:
-- `--ephemeral` — без сохранения сессий
-- `--sandbox workspace-write` — Codex может читать/писать файлы проекта, запускать билд/тесты
-- `-o файл` — финальный ответ агента записывается в файл (чище чем парсить JSONL)
-- `-C` — рабочая директория проекта
+Key flags:
+- `--ephemeral` — no session persistence
+- `--sandbox workspace-write` — Codex can read/write project files, run build/tests
+- `-o file` — agent's final answer is written to file (cleaner than parsing JSONL)
+- `-C` — project working directory
 
-**Промт для Codex записывай во временный файл** (`/tmp/codex-prompt-{ts}.txt`) — это избавляет от проблем с экранированием кавычек в shell.
+**Write the Codex prompt to a temp file** (`/tmp/codex-prompt-{ts}.txt`) — this avoids shell quoting issues.
 
-**Таймаут:** 180 секунд. При таймауте — сообщи пользователю и предложи упростить запрос.
+**Timeout:** 180 seconds. On timeout — show your own analysis and suggest simplifying the request for retry.
 
-## Как составлять промт для Codex
+## How to Compose the Codex Prompt
 
-Это самая важная часть. Не используй шаблон механически — адаптируй промт под задачу:
+This is the most important part. Don't use a template mechanically — adapt the prompt to the task:
 
-**Всегда включай:**
-- Краткое описание проекта и стека
-- Конкретный вопрос, сформулированный ясно
-- Инструкцию отвечать на русском
+**Always include:**
+- Brief project and stack description
+- Specific, clearly formulated question
+- Instruction to respond in Russian
 
-**Включай по необходимости:**
-- Содержимое релевантных файлов (до ~500 строк / 3-5 файлов) — если вопрос про конкретный код
-- Архитектурные решения из CLAUDE.md/TECH.md — если вопрос про архитектуру
-- Текст ошибки и стектрейс — если это дебаг
-- Ничего лишнего — если вопрос общий и Codex может сам изучить проект через sandbox
+**Include as needed:**
+- Contents of relevant files (up to ~500 lines / 3-5 files) — if the question is about specific code
+- Architectural decisions from CLAUDE.md/TECH.md — if the question is about architecture
+- Error text and stack trace — if this is debugging
+- Nothing extra — if the question is general and Codex can explore the project via sandbox
 
-**Тон промта:** ставь задачу как коллеге-инженеру. Не «ответь на вопрос», а «оцени подход», «найди проблемы», «предложи альтернативу».
+**Prompt tone:** frame it as a task for a fellow engineer. Not "answer the question" but "evaluate the approach", "find problems", "suggest alternatives".
 
-## Как представлять результат
+## How to Present the Result
 
-Формат вывода:
+Output format:
 
 ```
 ## Codex Second Opinion
 
-**Запрос:** {что пользователь спросил}
+**Request:** {what the user asked}
 
-### Анализ Codex
-{Ответ Codex — отформатированный, без мета-комментариев про инструменты}
+### Codex Analysis
+{Codex response — formatted, without meta-comments about tools}
 
-### Мой анализ
-{Твой независимый анализ того же вопроса — конкретный, со ссылками на код}
+### My Analysis
+{Your independent analysis of the same question — specific, with code references}
 
-### Синтез
-- **Согласие:** {где оба сходятся — это высокая уверенность}
-- **Расхождения:** {где не сходятся — с аргументацией, почему ты считаешь иначе}
-- **Рекомендация:** {итоговый совет, объединяющий лучшее из обоих анализов}
+### Synthesis
+- **Agreement:** {where both converge — high confidence}
+- **Disagreements:** {where they diverge — with arguments for why you think otherwise}
+- **Recommendation:** {final advice combining the best of both analyses}
 ```
 
-## Обработка ошибок
+## Error Handling
 
-- **Codex не установлен** → инструкция: `npm install -g @openai/codex`
-- **Нет аутентификации** → инструкция: `codex login`
-- **Таймаут** → покажи свой анализ + предложи упростить запрос для повторной попытки
-- **Пустой ответ** → покажи сырой stderr, дай свой анализ самостоятельно
-- **Пустой $ARGUMENTS** → спроси пользователя, о чём он хочет второе мнение
+- **Codex not installed** → instruction: `npm install -g @openai/codex`
+- **No authentication** → instruction: `codex login`
+- **Timeout** → show your analysis + suggest simplifying the request for retry
+- **Empty response** → show raw stderr, provide your own analysis
+- **Empty $ARGUMENTS** → ask the user what they want a second opinion on
