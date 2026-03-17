@@ -7,27 +7,45 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-// Git branch with robbyrussell-style formatting: git:(branch) *+
+// Git branch with robbyrussell-style formatting + file counts + push/pull
 function getGitInfo(dir) {
   try {
     const { execFileSync } = require('child_process');
     const opts = { cwd: dir, timeout: 150, stdio: ['pipe', 'pipe', 'pipe'] };
     const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], opts).toString().trim();
     const status = execFileSync('git', ['status', '--porcelain'], opts).toString();
-    let hasStaged = false;
-    let hasUnstaged = false;
+    let staged = 0;
+    let unstaged = 0;
     for (const line of status.split('\n')) {
       if (!line) continue;
       const idx = line[0];  // index column
       const wt = line[1];   // worktree column
-      if (idx === '?' || wt === '?') { hasUnstaged = true; continue; }
-      if (idx !== ' ' && idx !== '?') hasStaged = true;
-      if (wt !== ' ' && wt !== '?') hasUnstaged = true;
+      if (idx === '?' || wt === '?') { unstaged++; continue; }
+      if (idx !== ' ' && idx !== '?') staged++;
+      if (wt !== ' ' && wt !== '?') unstaged++;
     }
-    // * = staged (uncommitted), + = unstaged/untracked
-    const marks = (hasUnstaged ? '\x1b[33m+\x1b[0m' : '') + (hasStaged ? '\x1b[33m*\x1b[0m' : '');
-    const marksDisplay = marks ? ` ${marks}` : '';
-    return `\x1b[1;34mgit:(\x1b[31m${branch}\x1b[1;34m)\x1b[0m${marksDisplay}`;
+
+    // Push/pull counts (ahead/behind upstream)
+    let ahead = 0, behind = 0;
+    try {
+      const counts = execFileSync('git', ['rev-list', '--left-right', '--count', `${branch}...@{u}`], opts).toString().trim();
+      const parts = counts.split('\t');
+      ahead = parseInt(parts[0], 10) || 0;
+      behind = parseInt(parts[1], 10) || 0;
+    } catch (e) {} // no upstream — ignore
+
+    const segments = [];
+    // Staged (uncommitted) — yellow like reference
+    if (staged > 0) segments.push(`\x1b[1;33m${staged} staged\x1b[0m`);
+    // Unstaged/untracked (not in index) — cyan
+    if (unstaged > 0) segments.push(`\x1b[36m${unstaged} dirty\x1b[0m`);
+    // Unpushed commits — magenta
+    if (ahead > 0) segments.push(`\x1b[1;35m\u2191${ahead} push\x1b[0m`);
+    // Unpulled commits — red
+    if (behind > 0) segments.push(`\x1b[1;31m\u2193${behind} pull\x1b[0m`);
+
+    const extra = segments.length ? ` \x1b[2m[\x1b[0m${segments.join(' ')}\x1b[2m]\x1b[0m` : '';
+    return `\x1b[1;34mgit:(\x1b[31m${branch}\x1b[1;34m)\x1b[0m${extra}`;
   } catch (e) {
     return '';
   }

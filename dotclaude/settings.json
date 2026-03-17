@@ -1,21 +1,4 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/hooks/my-statusline.js"
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/sync-agents-md.sh"
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Read",
@@ -39,13 +22,35 @@
       "Bash(tail *)",
       "Bash(npm *)"
     ],
-    "ask": [
-      "Bash(rm -rf *)"
-    ],
     "deny": [
       "Bash(git push --force *)",
       "Bash(git reset --hard *)",
       "Bash(git clean *)"
+    ],
+    "ask": [
+      "Bash(rm -rf *)"
     ]
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME/.claude/hooks/sync-agents-md.sh\""
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"$HOME/.claude/hooks/my-statusline.js\""
+  },
+  "enabledPlugins": {
+    "skill-creator@claude-plugins-official": true
+  },
+  "effortLevel": "high",
+  "voiceEnabled": true
 }
